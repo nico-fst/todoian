@@ -1,4 +1,4 @@
-import { Plugin, requestUrl } from 'obsidian'
+import { MarkdownPostProcessorContext, Plugin, requestUrl } from 'obsidian'
 import { TodoianPluginSettings, DEFAULT_SETTINGS } from 'src/settings';
 import { TodoianSettingsTab } from 'src/settings-tab';
 // import { TodoistApi } from '@doist/todoist-api-typescript';
@@ -15,17 +15,56 @@ export default class Todoian extends Plugin {
 		this.fetchTasks();
 
 		this.addCommand({
-			id: 'insert-todoist-tasks',
+			id: 'todoian-insert-todoist-tasks',
 			name: 'Todoian: Insert filtered Todoist tasks',
 			editorCallback: async (editor, view) => {
 				const tasks = await this.fetchTasks();
 				if (tasks) {
 					const cursor = editor.getCursor();
-					const checkableTasks = tasks.map((task) => '- [ ] ' + task)
-					editor.replaceRange(checkableTasks.join('\n'), cursor);
+					editor.replaceRange(this.toCheckable(tasks).join('\n'), cursor);
 				}
 			}
 		});
+
+		this.addCommand({
+			id: 'todoian-insert-todoist-widget',
+			name: 'Todoian: Insert Todoist tasks widget',
+			editorCallback: async (editor, view) => {
+				editor.replaceSelection('```todoian-tasks\n```\n');
+			}
+		})
+
+		this.registerMarkdownPostProcessor((el: HTMLElement, ctx: MarkdownPostProcessorContext) => {
+			const codeBlock = el.querySelector('code');
+			if (codeBlock && codeBlock.textContent?.trim() === 'todoian-tasks') {
+				this.createTaskWidget(el);
+			}
+		})
+	}
+
+	async createTaskWidget(el: HTMLElement): Promise<void> {
+		const tasks = await this.fetchTasks();
+		if (tasks) {
+			const container = document.createElement('div');
+			tasks.forEach((task) => {
+				const checkbox = document.createElement('input');
+				checkbox.type = 'checkbox';
+
+				const label = document.createElement('label');
+				label.textContent = task;
+				label.style.marginLeft = '8px';
+
+				const taskContainer = document.createElement('div');
+				taskContainer.appendChild(checkbox);
+				taskContainer.appendChild(label);
+				container.appendChild(taskContainer);
+			});
+			el.innerHTML = '';
+			el.appendChild(container);
+		} else {
+			el.textContent = 'Error fetching tasks :(';
+		}
+
 	}
 
 	async fetchTasks(): Promise<string[] | null> {
@@ -55,11 +94,15 @@ export default class Todoian extends Plugin {
 		}
 	}
 
+	toCheckable(tasks: string[]): string[] {
+		return tasks.map((task) => '- [ ] ' + task);
+	}
+
 	async loadSettings(): Promise<void> {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
-	async saveSettings(): Promide<void> {
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
 }
