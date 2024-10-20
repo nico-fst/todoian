@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "todoian",
+	"name": "Todoian - Todoist in Obsidian",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Currently imports the big 3 tasks in todoist (being p1 and scheduled for today) into Obsidian daily notes.",
+	"author": "Nico Stern",
+	"authorUrl": "https://nicostern.de",
+	"fundingUrl": "buymeacoffee.com/nicostern",
 	"isDesktopOnly": false
 }
