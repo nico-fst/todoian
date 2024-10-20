@@ -8,10 +8,27 @@ export default class Todoian extends Plugin {
 	settings: TodoianPluginSettings;
 	statusBarTextElement: HTMLSpanElement;
 
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 		this.addSettingTab(new TodoianSettingsTab(this.app, this));
 
+		this.fetchTasks();
+
+		this.addCommand({
+			id: 'insert-todoist-tasks',
+			name: 'Todoian: Insert filtered Todoist tasks',
+			editorCallback: async (editor, view) => {
+				const tasks = await this.fetchTasks();
+				if (tasks) {
+					const cursor = editor.getCursor();
+					const checkableTasks = tasks.map((task) => '- [ ] ' + task)
+					editor.replaceRange(checkableTasks.join('\n'), cursor);
+				}
+			}
+		});
+	}
+
+	async fetchTasks(): Promise<string[] | null> {
 		const headers = {
 			"Authorization": `Bearer ${this.settings.todoistApiToken}`
 		}
@@ -23,49 +40,26 @@ export default class Todoian extends Plugin {
 				headers
 			});
 			if (resp.status === 200) {
-				console.log(resp.json);
+				const tasks: { content: string }[] = resp.json;
+				const taskContent = tasks.map((task: { content: string }) => task.content);
+				console.log(taskContent);
+				return taskContent;
+			} else {
+				console.log("Error fetching the Todoist tasks -", resp.status);
+				return null;
 			}
 		} catch (error) {
 			console.log("Token:", this.settings.todoistApiToken);
 			console.log("Error fetching the Todoist tasks:", error);
+			return null;
 		}
-
-		this.statusBarTextElement = this.addStatusBarItem().createEl('span');
-		this.readActiveFileAndUpdateLineCount();
-
-		// wait since plugings loaded before file:
-		this.app.workspace.on('active-leaf-change', async () => {
-			this.readActiveFileAndUpdateLineCount();
-		})
-		
-		this.app.workspace.on('editor-change', editor => {
-			const content = editor.getDoc().getValue();
-			this.updateLineCount(content);
-		})
 	}
 
-	async loadSettings() {
+	async loadSettings(): Promise<void> {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
-	async saveSettings() {
+	async saveSettings(): Promide<void> {
 		await this.saveData(this.settings);
-	}
-
-	private updateLineCount(fileContent?: string) {
-		const count = fileContent ? fileContent.split(/\r\n|\r|\n/).length : 0;
-		const linesWord = count === 1 ? "line" : "lines";
-		this.statusBarTextElement.textContent = `${count} ${linesWord}`;
-
-	}
-
-	private async readActiveFileAndUpdateLineCount() {
-		const file = this.app.workspace.getActiveFile();
-		if (file) {
-			const content = await this.app.vault.read(file);
-			this.updateLineCount(content);
-		} else {
-			this.updateLineCount(undefined);
-		}
 	}
 }
