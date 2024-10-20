@@ -15,7 +15,7 @@ export default class Todoian extends Plugin {
 		const headers = {
 			"Authorization": `Bearer ${this.settings.todoistApiToken}`
 		}
-		const encFilter = encodeURIComponent("p1 & today");
+		const encFilter = encodeURIComponent(this.settings.todoistFilter);
 
 		try {
 			const resp = await requestUrl({

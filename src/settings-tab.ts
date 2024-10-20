@@ -26,5 +26,18 @@ export class TodoianSettingsTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     })
             ));
+        
+        new Setting(this.containerEl)
+            .setName('Filter Name')
+            .setDesc('Enter the query for the tasks you want to display. When using the "Big 3 Tasks per day" Technique, I propose "p1 & today".')
+            .addText((text) => (
+                text
+                    .setPlaceholder('p1 & today')
+                    .setValue(this.plugin.settings.todoistFilter)
+                    .onChange(async (value) => {
+                        this.plugin.settings.todoistFilter = value;
+                        await this.plugin.saveSettings();
+                    })
+            ));
     }
 }
